@@ -8,7 +8,7 @@ var scene, camera, renderer, controls, loader;
 // var keyboard = new THREEx.KeyboardState();
 
 // custom global variables
-var cube, ball, paddle, paddleOutline, paddle2, paddleOutline2, keys, textMesh;
+var cube, ball, leftPaddle, paddleOutline, rightPaddle, paddleOutline2, keys, textMesh;
 const PADDLE_SPEED = 0.2;
 const BALL_SPEED = 0.1;
 const BALL_SIZE = 0.2;
@@ -47,7 +47,7 @@ function createScoreText()
 
         const textMaterial = new THREE.MeshBasicMaterial({color: 0xffffff});
         textMesh = new THREE.Mesh(textGeometry, textMaterial);
-        
+
         // Compute the bounding box and center the text
         // textGeometry.computeBoundingBox();
         // const boundingBox = textGeometry.boundingBox;
@@ -70,7 +70,7 @@ function Init()
 {
     // SCENE
     scene = new THREE.Scene();
-    
+
     // CAMERA
     var SCREEN_WIDTH = window.innerWidth, SCREEN_HEIGHT = window.innerHeight;
     var VIEW_ANGLE = 45, ASPECT = SCREEN_WIDTH / SCREEN_HEIGHT, NEAR = 0.1, FAR = 2000;
@@ -106,21 +106,21 @@ function Init()
         arrowdown: false,
         i: false
       };
-    
+
     document.body.addEventListener( 'keydown', function(e) {
 
     var key = e.code.replace('Key', '').toLowerCase();
-    console.log("key: " + key); 
+    console.log("key: " + key);
     if ( keys[ key ] !== undefined )
         keys[ key ] = true;
-    
+
     });
     document.body.addEventListener( 'keyup', function(e) {
-    
+
     var key = e.code.replace('Key', '').toLowerCase();
     if ( keys[ key ] !== undefined )
         keys[ key ] = false;
-    
+
     });
 
 
@@ -152,7 +152,7 @@ function Init()
     const whiteMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
     const blackMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
     const paddleOutlineMaterial = new THREE.MeshBasicMaterial({ color: 0xd1d1d1, side: THREE.BackSide });
-    // const cubeMaterial = new THREE.MeshStandardMaterial({map: cubeMap, aoMap: cubeAoMap, roughnessMap: cubeRoughnessMap, normalMap: cubeNormalMap}); 
+    // const cubeMaterial = new THREE.MeshStandardMaterial({map: cubeMap, aoMap: cubeAoMap, roughnessMap: cubeRoughnessMap, normalMap: cubeNormalMap});
     const ballMaterial = new THREE.MeshBasicMaterial({map: ballTexture});
 
 
@@ -167,9 +167,9 @@ function Init()
     const arenaTopSide = new THREE.Mesh(arenaLargeSideGeometry, whiteMaterial);
     // cube = new THREE.Mesh(geometry, cubeMaterial);
     ball = new THREE.Mesh(ballGeometry, ballMaterial);
-    paddle = new THREE.Mesh(paddleGeometry, paddleMaterial);
+    leftPaddle = new THREE.Mesh(paddleGeometry, paddleMaterial);
     paddleOutline = new THREE.Mesh(paddleGeometry, paddleOutlineMaterial);
-    paddle2 = new THREE.Mesh(paddleGeometry, paddleMaterial);
+    rightPaddle = new THREE.Mesh(paddleGeometry, paddleMaterial);
     paddleOutline2 = new THREE.Mesh(paddleGeometry, paddleOutlineMaterial);
 
     var line = new THREE.Line( lineGeometry, lineMaterial );
@@ -184,10 +184,10 @@ function Init()
     scene.add(arenaRightSide);
     scene.add(arenaBottomSide);
     scene.add(ball);
-    scene.add(paddle);
+    scene.add(leftPaddle);
     scene.add(paddleOutline);
     scene.add(paddleOutline2);
-    scene.add(paddle2);
+    scene.add(rightPaddle);
     scene.add(line);
 
 
@@ -198,14 +198,14 @@ function Init()
     arenaRightSide.position.x += 8.25;
     arenaLeftSide.position.x -= 8.25;
     // cube.position.y += 3;
-    paddle.position.x -= 7.25;
-    paddleOutline.position.x = paddle.position.x;
+    leftPaddle.position.x -= 7.25;
+    paddleOutline.position.x = leftPaddle.position.x;
     paddleOutline.scale.multiplyScalar(1.05);
     paddleOutline.scale.x *= 1.2;
-    paddle2.position.x += 7.25;
-    paddleOutline2.position.x = paddle2.position.x;
+    rightPaddle.position.x += 7.25;
+    paddleOutline2.position.x = rightPaddle.position.x;
     paddleOutline2.scale.multiplyScalar(1.05);
-    paddleOutline2.scale.x *= 1.2;      
+    paddleOutline2.scale.x *= 1.2;
 }
 
 function Loop()
@@ -220,36 +220,37 @@ function Update()
     if (keys.i)
     {
         console.log("[INFO]");
-        console.log("POS x: " + camera.position.x + " y: " + camera.position.y + " z: " + camera.position.z);    
-        console.log("ROTATION x: " + camera.rotation.x + " y: " + camera.rotation.y + " z: " + camera.rotation.z);    
-    
+        console.log("POS x: " + camera.position.x + " y: " + camera.position.y + " z: " + camera.position.z);
+        console.log("ROTATION x: " + camera.rotation.x + " y: " + camera.rotation.y + " z: " + camera.rotation.z);
+
     }
-    const paddleSize = paddle.geometry.parameters.height;
-    if (keys.w && paddle.position.y + paddleSize / 2 < MAX_HEIGHT)
-        paddle.position.y += PADDLE_SPEED;
-    else if (keys.s && paddle.position.y - paddleSize / 2 > MIN_HEIGHT)
-        paddle.position.y -= PADDLE_SPEED;
+    const paddleHeight = leftPaddle.geometry.parameters.height;
+	const paddleWidth = leftPaddle.geometry.parameters.width;
+    if (keys.w && leftPaddle.position.y + paddleHeight / 2 < MAX_HEIGHT)
+        leftPaddle.position.y += PADDLE_SPEED;
+    else if (keys.s && leftPaddle.position.y - paddleHeight / 2 > MIN_HEIGHT)
+        leftPaddle.position.y -= PADDLE_SPEED;
 
-    if (paddle.position.y + paddleSize / 2 > MAX_HEIGHT)
-        paddle.position.y = MAX_HEIGHT - paddleSize / 2;
-    else if (paddle.position.y - paddleSize / 2  < MIN_HEIGHT)
-        paddle.position.y = MIN_HEIGHT + paddleSize / 2;
+    if (leftPaddle.position.y + paddleHeight / 2 > MAX_HEIGHT)
+        leftPaddle.position.y = MAX_HEIGHT - paddleHeight / 2;
+    else if (leftPaddle.position.y - paddleHeight / 2  < MIN_HEIGHT)
+        leftPaddle.position.y = MIN_HEIGHT + paddleHeight / 2;
 
-    paddleOutline.position.y = paddle.position.y;
+    paddleOutline.position.y = leftPaddle.position.y;
 
-    // console.log(paddle2.geometry.parameters);
-    // console.log("[paddle2 pos] x: " + paddle2.position.x + " y: " + paddle2.position.y + " z: " + paddle2.position.z)
-    if (keys.arrowup && paddle2.position.y + paddle2.geometry.parameters.height / 2 < MAX_HEIGHT)
-        paddle2.position.y += PADDLE_SPEED;
-    else if (keys.arrowdown && paddle2.position.y - paddle2.geometry.parameters.height / 2 > MIN_HEIGHT)
-        paddle2.position.y -= PADDLE_SPEED;
+    // console.log(rightPaddle.geometry.parameters);
+    // console.log("[rightPaddle pos] x: " + rightPaddle.position.x + " y: " + rightPaddle.position.y + " z: " + rightPaddle.position.z)
+    if (keys.arrowup && rightPaddle.position.y + rightPaddle.geometry.parameters.height / 2 < MAX_HEIGHT)
+        rightPaddle.position.y += PADDLE_SPEED;
+    else if (keys.arrowdown && rightPaddle.position.y - rightPaddle.geometry.parameters.height / 2 > MIN_HEIGHT)
+        rightPaddle.position.y -= PADDLE_SPEED;
 
-    if (paddle2.position.y + paddleSize / 2 > MAX_HEIGHT)
-        paddle2.position.y = MAX_HEIGHT - paddleSize / 2;
-    else if (paddle2.position.y - paddleSize / 2  < MIN_HEIGHT)
-        paddle2.position.y = MIN_HEIGHT + paddleSize / 2;
+    if (rightPaddle.position.y + paddleHeight / 2 > MAX_HEIGHT)
+        rightPaddle.position.y = MAX_HEIGHT - paddleHeight / 2;
+    else if (rightPaddle.position.y - paddleHeight / 2  < MIN_HEIGHT)
+        rightPaddle.position.y = MIN_HEIGHT + paddleHeight / 2;
 
-    paddleOutline2.position.y = paddle2.position.y;
+    paddleOutline2.position.y = rightPaddle.position.y;
 
 
     // BALL
@@ -273,9 +274,24 @@ function Update()
     if (ball.position.y - BALL_SIZE < MIN_HEIGHT || ball.position.y + BALL_SIZE > MAX_HEIGHT)
         ballSpeed.y = -ballSpeed.y;
 
-    // Rotate cube
-    // cube.rotation.x += 0.01;
-    // cube.rotation.y += 0.01;
+
+	// PADDLE COLLISIONS
+	if (ball.position.x + BALL_SIZE > rightPaddle.position.x - paddleWidth / 2
+		&& ball.position.y + BALL_SIZE > rightPaddle.position.y - paddleHeight / 2
+		&& ball.position.y + BALL_SIZE < rightPaddle.position.y + paddleHeight / 2)
+	{
+		ballSpeed.x = -ballSpeed.x
+		// console.log("hit");
+	}
+
+	if (ball.position.x - BALL_SIZE < leftPaddle.position.x + paddleWidth / 2
+		&& ball.position.y + BALL_SIZE > leftPaddle.position.y - paddleHeight / 2
+		&& ball.position.y + BALL_SIZE < leftPaddle.position.y + paddleHeight / 2)
+	{
+		ballSpeed.x = -ballSpeed.x
+		// console.log("hit");
+	}
+
 
     controls.update();
 }
