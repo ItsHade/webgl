@@ -8,7 +8,7 @@ var scene, camera, renderer, controls, loader;
 // var keyboard = new THREEx.KeyboardState();
 
 // custom global variables
-var cube, ball, leftPaddle, paddleOutline, rightPaddle, paddleOutline2, keys, textMesh;
+var cube, line, ball, leftPaddle, paddleOutline, rightPaddle, paddleOutline2, keys, textMesh;
 const PADDLE_SPEED = 0.2;
 const BALL_SPEED = 0.1;
 const BALL_SIZE = 0.2;
@@ -49,21 +49,32 @@ function createScoreText()
         textMesh = new THREE.Mesh(textGeometry, textMaterial);
 
         // Compute the bounding box and center the text
-        // textGeometry.computeBoundingBox();
-        // const boundingBox = textGeometry.boundingBox;
-        // const size = new THREE.Vector3();
-        // boundingBox.getSize(size);
-        // scoreMesh.position.x = -size.x / 2;
-        // scoreMesh.position.y = -size.y / 2;
-        // scoreMesh.position.z = -size.z / 2;
+        textGeometry.computeBoundingBox();
+        const textBoundingBox = textGeometry.boundingBox;
+        const textSize = new THREE.Vector3();
+        textBoundingBox.getSize(textSize);
+        textMesh.position.x = -textSize.x / 2;
+        textMesh.position.y = -textSize.y / 2;
+        textMesh.position.z = -textSize.z / 2;
 
         textMesh.position.y += 6;
         textMesh.position.z += 1.5;
+		console.log("[text] x: " + textMesh.position.x + " y: " + textMesh.position.y + " z: " + textMesh.position.z);
+		console.log("[line] x: " + line.position.x + " y: " + line.position.y + " z: " + line.position.z);
         textMesh.rotateX(45);
-        textMesh.position.x -= 1.5;
+
 
         scene.add(textMesh);
     } );
+}
+
+function onWindowResize()
+{
+
+	camera.aspect = window.innerWidth / window.innerHeight;
+	camera.updateProjectionMatrix();
+
+	renderer.setSize( window.innerWidth, window.innerHeight );
 }
 
 function Init()
@@ -75,26 +86,35 @@ function Init()
     var SCREEN_WIDTH = window.innerWidth, SCREEN_HEIGHT = window.innerHeight;
     var VIEW_ANGLE = 45, ASPECT = SCREEN_WIDTH / SCREEN_HEIGHT, NEAR = 0.1, FAR = 2000;
     camera = new THREE.PerspectiveCamera(VIEW_ANGLE, ASPECT, NEAR, FAR);
+	// TODO (maybe): always have the same position no mater what the dimensions of the window are
     camera.position.set(0, -11, 13);
     camera.lookAt(0, 0, 0);
     scene.add(camera);
 
+	window.addEventListener( 'resize', onWindowResize );
+	console.log("width: " + SCREEN_WIDTH + " height: " + SCREEN_HEIGHT);
+
+
     // RENDERER
     renderer = new THREE.WebGLRenderer({antialias: true});
+	renderer.setPixelRatio( window.devicePixelRatio );
     renderer.setSize(SCREEN_WIDTH, SCREEN_HEIGHT);
     renderer.setClearColor(0x1c1c1c, 1);
-    // renderer.setAnimationLoop(animate);
     document.body.appendChild(renderer.domElement);
+    // renderer.setAnimationLoop(animate);
+
 
     // CONTROLS
     controls = new OrbitControls( camera, renderer.domElement);
     controls.update();
+
 
     // LIGHT
     // can't see textures without light
 	var light = new THREE.PointLight(0xffffff);
 	light.position.set(0, 0, 10);
 	scene.add(light);
+
 
     // INPUT
     keys = {
@@ -108,15 +128,14 @@ function Init()
       };
 
     document.body.addEventListener( 'keydown', function(e) {
-
     var key = e.code.replace('Key', '').toLowerCase();
     console.log("key: " + key);
     if ( keys[ key ] !== undefined )
         keys[ key ] = true;
 
     });
-    document.body.addEventListener( 'keyup', function(e) {
 
+    document.body.addEventListener( 'keyup', function(e) {
     var key = e.code.replace('Key', '').toLowerCase();
     if ( keys[ key ] !== undefined )
         keys[ key ] = false;
@@ -137,6 +156,7 @@ function Init()
 
     const lineGeometry = new THREE.BufferGeometry().setFromPoints( points );
 
+
     // TEXTURES
     const textureLoader = new THREE.TextureLoader();
     // const cubeMap = textureLoader.load( "./textures/honeycomb/Honeycomb_basecolor.jpg");
@@ -145,6 +165,7 @@ function Init()
     // const cubeHeightMap = textureLoader.load( "textures/honeycomb/Honeycomb_height.png");
     // const cubeNormalMap = textureLoader.load( "textures/honeycomb/Honeycomb_normal.jpg");
     const ballTexture = textureLoader.load("./textures/ball_texture.png")
+
 
     // MATERIAL
     const lineMaterial = new THREE.LineDashedMaterial( { color: 0x353535, linewidth: 1, scale: 1, dashSize: 0.5, gapSize: 0.5 } );
@@ -161,6 +182,7 @@ function Init()
 
     createScoreText();
 
+
     // MESH
     const arenaFloor = new THREE.Mesh(arenaFloorGeometry, blackMaterial);
     const arenaLeftSide = new THREE.Mesh(arenaSmallSideGeometry, whiteMaterial);
@@ -172,9 +194,10 @@ function Init()
     rightPaddle = new THREE.Mesh(paddleGeometry, paddleMaterial);
     paddleOutline2 = new THREE.Mesh(paddleGeometry, paddleOutlineMaterial);
 
-    var line = new THREE.Line( lineGeometry, lineMaterial );
+    line = new THREE.Line( lineGeometry, lineMaterial );
     const arenaBottomSide = arenaTopSide.clone();
     const arenaRightSide = arenaLeftSide.clone();
+
 
     // Add meshes to scene
     // scene.add(cube);
@@ -189,7 +212,6 @@ function Init()
     scene.add(paddleOutline2);
     scene.add(rightPaddle);
     scene.add(line);
-
 
     line.computeLineDistances();
     arenaFloor.position.z -= 0.5;
@@ -224,8 +246,10 @@ function Update()
         console.log("ROTATION x: " + camera.rotation.x + " y: " + camera.rotation.y + " z: " + camera.rotation.z);
 
     }
+
     const paddleHeight = leftPaddle.geometry.parameters.height;
 	const paddleWidth = leftPaddle.geometry.parameters.width;
+
     if (keys.w && leftPaddle.position.y + paddleHeight / 2 < MAX_HEIGHT)
         leftPaddle.position.y += PADDLE_SPEED;
     else if (keys.s && leftPaddle.position.y - paddleHeight / 2 > MIN_HEIGHT)
