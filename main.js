@@ -17,11 +17,28 @@ const MIN_HEIGHT = -4.5;
 var ballSpeed = {x: BALL_SPEED, y: BALL_SPEED};
 var leftPlayerScore = 0;
 var rightPlayerScore = 0;
+var pause = false;
 
 // TODO: I think i should load everything (all font, textures...) before initializing the rest
 // Load();
 Init();
 Loop();
+
+function abs(num)
+{
+    if (num < 0)
+        return (-num);
+    return (num);
+}
+
+function onWindowResize()
+{
+
+	camera.aspect = window.innerWidth / window.innerHeight;
+	camera.updateProjectionMatrix();
+
+	renderer.setSize( window.innerWidth, window.innerHeight );
+}
 
 function createScoreText()
 {
@@ -59,22 +76,12 @@ function createScoreText()
 
         textMesh.position.y += 6;
         textMesh.position.z += 1.5;
-		console.log("[text] x: " + textMesh.position.x + " y: " + textMesh.position.y + " z: " + textMesh.position.z);
+        console.log("[text] x: " + textMesh.position.x + " y: " + textMesh.position.y + " z: " + textMesh.position.z);
 		console.log("[line] x: " + line.position.x + " y: " + line.position.y + " z: " + line.position.z);
         textMesh.rotateX(45);
 
-
         scene.add(textMesh);
     } );
-}
-
-function onWindowResize()
-{
-
-	camera.aspect = window.innerWidth / window.innerHeight;
-	camera.updateProjectionMatrix();
-
-	renderer.setSize( window.innerWidth, window.innerHeight );
 }
 
 function Init()
@@ -86,11 +93,11 @@ function Init()
     var SCREEN_WIDTH = window.innerWidth, SCREEN_HEIGHT = window.innerHeight;
     var VIEW_ANGLE = 45, ASPECT = SCREEN_WIDTH / SCREEN_HEIGHT, NEAR = 0.1, FAR = 2000;
     camera = new THREE.PerspectiveCamera(VIEW_ANGLE, ASPECT, NEAR, FAR);
-	// TODO (maybe): always have the same position no mater what the dimensions of the window are
     camera.position.set(0, -11, 13);
     camera.lookAt(0, 0, 0);
     scene.add(camera);
 
+    // WINDOW RESIZE
 	window.addEventListener( 'resize', onWindowResize );
 	console.log("width: " + SCREEN_WIDTH + " height: " + SCREEN_HEIGHT);
 
@@ -103,18 +110,15 @@ function Init()
     document.body.appendChild(renderer.domElement);
     // renderer.setAnimationLoop(animate);
 
-
     // CONTROLS
     controls = new OrbitControls( camera, renderer.domElement);
     controls.update();
-
 
     // LIGHT
     // can't see textures without light
 	var light = new THREE.PointLight(0xffffff);
 	light.position.set(0, 0, 10);
 	scene.add(light);
-
 
     // INPUT
     keys = {
@@ -124,18 +128,20 @@ function Init()
         w: false,
         arrowup: false,
         arrowdown: false,
-        i: false
+        i: false,
+        escape: false
       };
 
     document.body.addEventListener( 'keydown', function(e) {
+
     var key = e.code.replace('Key', '').toLowerCase();
     console.log("key: " + key);
     if ( keys[ key ] !== undefined )
         keys[ key ] = true;
 
     });
-
     document.body.addEventListener( 'keyup', function(e) {
+
     var key = e.code.replace('Key', '').toLowerCase();
     if ( keys[ key ] !== undefined )
         keys[ key ] = false;
@@ -156,7 +162,6 @@ function Init()
 
     const lineGeometry = new THREE.BufferGeometry().setFromPoints( points );
 
-
     // TEXTURES
     const textureLoader = new THREE.TextureLoader();
     // const cubeMap = textureLoader.load( "./textures/honeycomb/Honeycomb_basecolor.jpg");
@@ -165,7 +170,6 @@ function Init()
     // const cubeHeightMap = textureLoader.load( "textures/honeycomb/Honeycomb_height.png");
     // const cubeNormalMap = textureLoader.load( "textures/honeycomb/Honeycomb_normal.jpg");
     const ballTexture = textureLoader.load("./textures/ball_texture.png")
-
 
     // MATERIAL
     const lineMaterial = new THREE.LineDashedMaterial( { color: 0x353535, linewidth: 1, scale: 1, dashSize: 0.5, gapSize: 0.5 } );
@@ -182,7 +186,6 @@ function Init()
 
     createScoreText();
 
-
     // MESH
     const arenaFloor = new THREE.Mesh(arenaFloorGeometry, blackMaterial);
     const arenaLeftSide = new THREE.Mesh(arenaSmallSideGeometry, whiteMaterial);
@@ -198,7 +201,6 @@ function Init()
     const arenaBottomSide = arenaTopSide.clone();
     const arenaRightSide = arenaLeftSide.clone();
 
-
     // Add meshes to scene
     // scene.add(cube);
     scene.add(arenaFloor);
@@ -213,6 +215,7 @@ function Init()
     scene.add(rightPaddle);
     scene.add(line);
 
+
     line.computeLineDistances();
     arenaFloor.position.z -= 0.5;
     arenaTopSide.position.y += 4.75;
@@ -220,11 +223,11 @@ function Init()
     arenaRightSide.position.x += 8.25;
     arenaLeftSide.position.x -= 8.25;
     // cube.position.y += 3;
-    leftPaddle.position.x -= 7.25;
+    leftPaddle.position.x -= 7.5;
     paddleOutline.position.x = leftPaddle.position.x;
     paddleOutline.scale.multiplyScalar(1.05);
     paddleOutline.scale.x *= 1.2;
-    rightPaddle.position.x += 7.25;
+    rightPaddle.position.x += 7.5;
     paddleOutline2.position.x = rightPaddle.position.x;
     paddleOutline2.scale.multiplyScalar(1.05);
     paddleOutline2.scale.x *= 1.2;
@@ -233,8 +236,13 @@ function Init()
 function Loop()
 {
     requestAnimationFrame(Loop);
-    Update();
-    Render();
+    if (keys.escape)
+        pause = !pause
+    if (!pause)
+    {
+        Update();
+        Render();
+    }
 }
 
 function Update()
@@ -246,7 +254,7 @@ function Update()
         console.log("ROTATION x: " + camera.rotation.x + " y: " + camera.rotation.y + " z: " + camera.rotation.z);
 
     }
-
+    
     const paddleHeight = leftPaddle.geometry.parameters.height;
 	const paddleWidth = leftPaddle.geometry.parameters.width;
 
@@ -287,35 +295,34 @@ function Update()
     {
         rightPlayerScore += 1;
         createScoreText();
-        ballSpeed.x = -ballSpeed.x; //
+        ball.position.x = 0;
+        ball.position.y = 0;
     }
     if (ball.position.x + BALL_SIZE > 8)
     {
         leftPlayerScore += 1;
         createScoreText();
-        ballSpeed.x = -ballSpeed.x; //
+        ball.position.x = 0;
+        ball.position.y = 0;
     }
     if (ball.position.y - BALL_SIZE < MIN_HEIGHT || ball.position.y + BALL_SIZE > MAX_HEIGHT)
         ballSpeed.y = -ballSpeed.y;
 
 
 	// PADDLE COLLISIONS
-	if (ball.position.x + BALL_SIZE > rightPaddle.position.x - paddleWidth / 2
-		&& ball.position.y + BALL_SIZE > rightPaddle.position.y - paddleHeight / 2
-		&& ball.position.y + BALL_SIZE < rightPaddle.position.y + paddleHeight / 2)
-	{
-		ballSpeed.x = -ballSpeed.x
-		// console.log("hit");
-	}
-
-	if (ball.position.x - BALL_SIZE < leftPaddle.position.x + paddleWidth / 2
-		&& ball.position.y + BALL_SIZE > leftPaddle.position.y - paddleHeight / 2
-		&& ball.position.y + BALL_SIZE < leftPaddle.position.y + paddleHeight / 2)
-	{
-		ballSpeed.x = -ballSpeed.x
-		// console.log("hit");
-	}
-
+    // TODO: collision with upper and lower side of the paddle
+    if (abs(ball.position.x - leftPaddle.position.x) <= BALL_SIZE + paddleWidth / 2
+        && abs(ball.position.y - leftPaddle.position.y) <= BALL_SIZE + paddleHeight / 2)
+    {
+        ballSpeed.x = -ballSpeed.x;
+        ball.position.x += ballSpeed.x
+    }
+    else if (abs(ball.position.x - rightPaddle.position.x) <= BALL_SIZE + paddleWidth / 2
+        && abs(ball.position.y - rightPaddle.position.y) <= BALL_SIZE + paddleHeight / 2)
+    {
+        ballSpeed.x = -ballSpeed.x;
+        ball.position.x += ballSpeed.x
+    }
 
     controls.update();
 }
